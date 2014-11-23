@@ -2,7 +2,7 @@ var events = require('events');
 
 exports.list = function(req, res){
 	var model = req.app.db.model.Post;
-	
+
   	model
   		.find({})
   		.exec(function(err, posts) {
