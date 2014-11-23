@@ -19,9 +19,23 @@ exports.create = function(req, res){
 	var title = req.query.title;
 	var content = req.query.content;
 
+	workflow.outcome = {
+		success: false,
+		errfor: {}
+	};
+	
 	workflow.on('validation', function() {
+		subject = req.body.subject;
+		content = req.body.content;	
 
-		if (hasError) workflow.emit('response');
+		if (subject.length === 0) 
+			workflow.outcome.errfor.subject = '這是必填欄位';
+
+		if (content.length === 0) 
+			workflow.outcome.errfor.content = '這是必填欄位';
+
+		if (Object.keys(workflow.outcome.errfor).length !== 0)
+			return workflow.emit('response');
 
 		workflow.emit('savePost');
 	});
