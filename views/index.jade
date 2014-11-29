@@ -26,12 +26,7 @@ block content
           button.btn.btn-primary.btn-format 日期格式
       <% _.each(posts, function(post) { %>
       .well(style='margin-top: 20px;')
-        h1 <%= post.subject %>
-        <% if (post.orders.length === 0) { %>
-        button.btn.btn-default(data-purchase-for!='<%= post._id %>') 購買全文
-        <% } else { %>
-        a.btn.btn-danger(href!='<%= post.orders[0].paypal.links[1].href %>', target='_blank') 線上付款
-        <% } %>
+        h1 <%= post.title %>
         p.lead
           | by
           | &nbsp;<%= post.userId.facebook.displayName %>
@@ -50,10 +45,10 @@ block content
     script(type='text/template', id='tmpl-form')
       form.form-horizontal
         h3 Leave a Message
-        .form-group(class!='<%= errfor.subject ? "has-error" : "" %>')
-          label.control-label(for='subject') Subject
-          input.form-control#subject(name='subject', type='text')
-          label.has-error.control-label.pull-right <%= errfor.subject %>
+        .form-group(class!='<%= errfor.title ? "has-error" : "" %>')
+          label.control-label(for='title') Title
+          input.form-control#title(name='title', type='text')
+          label.has-error.control-label.pull-right <%= errfor.title %>
         .form-group(class!='<%= errfor.content ? "has-error" : "" %>')
           label.control-label(for='subject') Content
           textarea.form-control#content(name='content')

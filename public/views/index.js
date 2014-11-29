@@ -49,7 +49,7 @@ app.SinglePost = Backbone.Model.extend({
     errfor: {},
 
     content: '',
-    subject: ''
+    title: ''
   }
 });
 
@@ -90,12 +90,14 @@ app.PurchasePost = Backbone.Model.extend({
     preventSubmit: function(event) {
         event.preventDefault();
     },
-    performSubmit: function() {
-      var subject = this.$el.find('#subject').val();
+    performSubmit: function(event) {
+      event.preventDefault();
+
+      var title = this.$el.find('#title').val();
       var content = this.$el.find('#content').val();
 
       this.model.save({
-        subject: subject,
+        title: title,
         content: content
       });
     }

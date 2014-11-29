@@ -8,6 +8,7 @@ var http = require('http');
 var mongoose = require('mongoose');
 var passport = require('passport')
     , FacebookStrategy = require('passport-facebook').Strategy;
+var session = require('express-session');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -55,6 +56,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(session({ secret: 'booklog store' }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -91,6 +94,11 @@ passport.use(new FacebookStrategy({
    });
   }
 ));
+
+app.use(function(req, res, next) {
+    res.locals.user = req.user;
+    next();
+});
 
 app.use('/', routes);
 app.use('/users', users);
