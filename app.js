@@ -42,6 +42,12 @@ postSchema.index( { title: 1 } );
 postSchema.index( { title: "text" } );
 postSchema.index( { content: "text" } );
 
+postSchema.plugin(require('./schema/countPlugin'));
+
+postSchema.methods.sync = function() {
+  console.log('sync');
+}
+
 app.db = {
     model: {
         Post: mongoose.model('post', postSchema),
