@@ -5,6 +5,7 @@ exports.list = function(req, res){
 
   	model
   		.find({})
+  		.populate('userId')
   		.exec(function(err, posts) {
 		  	res.send({
 		  		posts: posts
@@ -18,7 +19,8 @@ exports.listByTag = function(req, res){
 	var tag = req.params.tag;
 
   	model
-  		.find({title: tag})
+  		.find({ title: tag })
+  		.populate('userId')
   		.exec(function(err, posts) {
 		  	res.send({
 		  		posts: posts
