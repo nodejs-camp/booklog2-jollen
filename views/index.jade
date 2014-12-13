@@ -31,6 +31,11 @@ block content
         h1 <%= post.title %>
         h2 作者: <%= post.userId.displayName %>
         p 字數: <%= post.wchars %>
+        <% if (post.orders.length === 0) { %>
+        button.btn.btn-default(data-purchase-for!='<%= post._id %>') 購買全文
+        <% } else { %>
+        a.btn.btn-danger(href!='<%= post.orders[0].paypal.links[1].href %>', target='_blank') 線上付款
+        <% } %>
       <% }); %>
 
     script(type='text/template', id='tmpl-results')
