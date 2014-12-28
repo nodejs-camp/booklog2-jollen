@@ -96,7 +96,7 @@ passport.deserializeUser(function(obj, done) {
 passport.use(new FacebookStrategy({
     clientID: '1559480364270197',
     clientSecret: '4d5d1e9389c179142348cbb7044bdab1',
-    callbackURL: "http://innoboard.cc:3000/auth/facebook/callback"
+    callbackURL: "http://innoboard.cc/auth/facebook/callback"
   },
   function(accessToken, refreshToken, profile, done) {
    app.db.model.User.findOne({"facebook._json.id": profile._json.id}, function(err, user) {
