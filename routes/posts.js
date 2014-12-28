@@ -20,7 +20,7 @@ exports.list = function(req, res){
   					var uid;
   					for (j = 0; j < posts[i].customers.length; j++) {
   						uid = '' + posts[i].customers[j];
-  						if (uid === req.user._id) posts[i].granted = true;
+  						if (typeof(req.user) !== 'undefined' && uid === req.user._id) posts[i].granted = true;
   					}
   				}
 
