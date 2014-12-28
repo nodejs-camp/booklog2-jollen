@@ -15,165 +15,185 @@ var users = require('./routes/users');
 var posts = require('./routes/posts');
 var paypal = require('./routes/paypal');
 
-var app = express();
+var cluster = require('cluster');
 
-mongoose.connect('mongodb://localhost/booklog2');
+if (cluster.isMaster) {
+    // Count the machine's CPUs
+    var cpuCount = require('os').cpus().length;
+    var DEFAULT_PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function callback () {
-  console.log('MongoDB: connected.');   
-});
+    console.info('CPUs: ' + cpuCount);
 
-var postSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    title: String,
-    content: String,
-    wchars: { type: Number, default: 0 },
-
-    /* PayPal payments */
-    orders: [{
-      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      paypal: { type: Object, select: true } 
-    }],
-    customers: [ { type: mongoose.Schema.Types.ObjectId, ref: 'User' } ]
-});
-
-var userSchema = new mongoose.Schema({
-    username: { type: String, unique: true, select: false  },
-    displayName: { type: String, unique: true },
-    email: { type: String, unique: true, select: false  },
-    timeCreated: { type: Date, default: Date.now, select: false },
-    facebook: { type: Object, select: false } 
-});
-
-postSchema.index( { title: 1 } );
-postSchema.index( { title: "text" } );
-postSchema.index( { content: "text" } );
-
-postSchema.plugin(require('./schema/countPlugin'));
-
-postSchema.methods.sync = function() {
-  console.log('sync');
-}
-
-app.db = {
-    model: {
-        Post: mongoose.model('post', postSchema),
-        User: mongoose.model('User', userSchema)
+    // Create a worker for each CPU
+    var i;
+    for (i = 0; i < cpuCount; i++) {
+        var port = DEFAULT_PORT + i;
+        cluster.fork({PORT: port});
     }
-};
+} else {
+    var app = express();
 
-// utility object
-//app.utility = {};
-//app.utility.workflow = require('./utilities/fsm');
+    mongoose.connect('mongodb://localhost/booklog2');
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+    var db = mongoose.connection;
+    db.on('error', console.error.bind(console, 'connection error:'));
+    db.once('open', function callback () {
+      console.log('MongoDB: connected.');   
+    });
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+    var postSchema = new mongoose.Schema({
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        title: String,
+        content: String,
+        wchars: { type: Number, default: 0 },
 
-app.use(session({ secret: 'booklog store' }));
+        /* PayPal payments */
+        orders: [{
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+          paypal: { type: Object, select: true } 
+        }],
+        customers: [ { type: mongoose.Schema.Types.ObjectId, ref: 'User' } ]
+    });
 
-app.use(passport.initialize());
-app.use(passport.session());
+    var userSchema = new mongoose.Schema({
+        username: { type: String, unique: true, select: false  },
+        displayName: { type: String, unique: true },
+        email: { type: String, unique: true, select: false  },
+        timeCreated: { type: Date, default: Date.now, select: false },
+        facebook: { type: Object, select: false } 
+    });
 
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
+    postSchema.index( { title: 1 } );
+    postSchema.index( { title: "text" } );
+    postSchema.index( { content: "text" } );
 
-passport.deserializeUser(function(obj, done) {
-  done(null, obj);
-});
+    postSchema.plugin(require('./schema/countPlugin'));
 
-passport.use(new FacebookStrategy({
-    clientID: '1559480364270197',
-    clientSecret: '4d5d1e9389c179142348cbb7044bdab1',
-    callbackURL: "http://innoboard.cc/auth/facebook/callback"
-  },
-  function(accessToken, refreshToken, profile, done) {
-   app.db.model.User.findOne({"facebook._json.id": profile._json.id}, function(err, user) {
-        if (!user) {
-          var obj = {
-            username: profile.username,
-            displayName: profile.displayName,
-            email: '',
-            facebook: profile
-           };
+    postSchema.methods.sync = function() {
+      console.log('sync');
+    }
 
-           var doc = new app.db.model.User(obj);
-           doc.save();
-
-           user = doc;
+    app.db = {
+        model: {
+            Post: mongoose.model('post', postSchema),
+            User: mongoose.model('User', userSchema)
         }
+    };
 
-        return done(null, user); // verify
-   });
-  }
-));
+    // utility object
+    //app.utility = {};
+    //app.utility.workflow = require('./utilities/fsm');
 
-app.use(function(req, res, next) {
-    res.locals.user = req.user;
-    next();
-});
+    // view engine setup
+    app.set('views', path.join(__dirname, 'views'));
+    app.set('view engine', 'jade');
 
-app.use('/', routes);
-app.use('/users', users);
+    // uncomment after placing your favicon in /public
+    //app.use(favicon(__dirname + '/public/favicon.ico'));
+    app.use(logger('dev'));
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(cookieParser());
+    app.use(express.static(path.join(__dirname, 'public')));
 
-/** Paypal */
-app.use(paypal);
+    app.use(session({ secret: 'booklog store' }));
 
-/** REST APIs */
-app.get('/1/post', posts.list);
-app.get('/1/post/:tag', posts.listByTag);
-app.post('/1/post', posts.create);
+    app.use(passport.initialize());
+    app.use(passport.session());
 
-/** Pages */
-app.get('/login', passport.authenticate('facebook'));
-app.get('/auth/facebook/callback', 
-  passport.authenticate('facebook', { successRedirect: '/',
-                                      failureRedirect: '/login/fail' }));
+    passport.serializeUser(function(user, done) {
+      done(null, user);
+    });
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-    var err = new Error('Not Found');
-    err.status = 404;
-    next(err);
-});
+    passport.deserializeUser(function(obj, done) {
+      done(null, obj);
+    });
 
-// error handlers
+    passport.use(new FacebookStrategy({
+        clientID: '1559480364270197',
+        clientSecret: '4d5d1e9389c179142348cbb7044bdab1',
+        callbackURL: "http://innoboard.cc/auth/facebook/callback"
+      },
+      function(accessToken, refreshToken, profile, done) {
+       app.db.model.User.findOne({"facebook._json.id": profile._json.id}, function(err, user) {
+            if (!user) {
+              var obj = {
+                username: profile.username,
+                displayName: profile.displayName,
+                email: '',
+                facebook: profile
+               };
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
+               var doc = new app.db.model.User(obj);
+               doc.save();
+
+               user = doc;
+            }
+
+            return done(null, user); // verify
+       });
+      }
+    ));
+
+    app.use(function(req, res, next) {
+        res.locals.user = req.user;
+        next();
+    });
+
+    app.use('/', routes);
+    app.use('/users', users);
+
+    /** Paypal */
+    app.use(paypal);
+
+    /** REST APIs */
+    app.get('/1/post', posts.list);
+    app.get('/1/post/:tag', posts.listByTag);
+    app.post('/1/post', posts.create);
+
+    /** Pages */
+    app.get('/login', passport.authenticate('facebook'));
+    app.get('/auth/facebook/callback', 
+      passport.authenticate('facebook', { successRedirect: '/',
+                                          failureRedirect: '/login/fail' }));
+
+    // catch 404 and forward to error handler
+    app.use(function(req, res, next) {
+        var err = new Error('Not Found');
+        err.status = 404;
+        next(err);
+    });
+
+    // error handlers
+
+    // development error handler
+    // will print stacktrace
+    if (app.get('env') === 'development') {
+        app.use(function(err, req, res, next) {
+            res.status(err.status || 500);
+            res.render('error', {
+                message: err.message,
+                error: err
+            });
+        });
+    }
+
+    // production error handler
+    // no stacktraces leaked to user
     app.use(function(err, req, res, next) {
         res.status(err.status || 500);
         res.render('error', {
             message: err.message,
-            error: err
+            error: {}
         });
     });
-}
 
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {}
+    app.set('port', process.env.PORT || 3000);
+
+    http.createServer(app).listen(app.get('port'), function(){
+        if (cluster.isWorker) workerinfo = ", on worker " + cluster.worker.id;
+        console.log('Express server listening on port ' + app.get('port') + workerinfo);
     });
-});
 
-http.createServer(app).listen(3000, function(){
-    console.log('Express server listening on port 3000');
-});
-
-module.exports = app;
+    module.exports = app;
+}
