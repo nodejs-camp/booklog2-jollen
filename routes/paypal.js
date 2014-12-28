@@ -36,8 +36,8 @@ router.put('/1/post/:postId/pay', function(req, res, next) {
 		            redirect_urls: {
 
 		                // http://localhost:3000/1/post/539eb886e8dbde4b39000007/paid?token=EC-4T17102178173001V&PayerID=QPPLBGBK5ZTVS
-		                return_url: 'http://localhost:3000/1/post/' + postId + '/paid',
-		                cancel_url: 'http://localhost:3000/1/post/' + postId + '/cancel'
+		                return_url: 'http://innoboard.cc/1/post/' + postId + '/paid',
+		                cancel_url: 'http://innoboard.cc/1/post/' + postId + '/cancel'
 		            },
 		            transactions: [{
 		                amount: {
