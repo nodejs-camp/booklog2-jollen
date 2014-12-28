@@ -65,8 +65,8 @@ app.db = {
 };
 
 // utility object
-app.utility = {};
-app.utility.workflow = require('./utilities/fsm');
+//app.utility = {};
+//app.utility.workflow = require('./utilities/fsm');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
